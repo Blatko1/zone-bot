@@ -1194,4 +1194,5 @@ version = "0.1.0"
 dependencies = [
  "binance",
  "serde",
+ "serde_json",
 ]
