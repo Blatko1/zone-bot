@@ -1,4 +1,4 @@
-use std::{fs, io, path::PathBuf};
+use std::{fs, io};
 
 const SAVE: &str = "bot_data.json";
 
@@ -31,7 +31,8 @@ enum PriorityData {
 }
 
 pub fn load_save() -> io::Result<SaveData> {
-    match fs::read(SAVE) {
+    let path = &format!("{}/{}", std::env::current_exe()?.parent().unwrap().to_str().unwrap(), SAVE);
+    match fs::read(path) {
         Ok(f) => {
             println!("Save file found!");
             match serde_json::from_slice(&f) {
@@ -45,10 +46,11 @@ pub fn load_save() -> io::Result<SaveData> {
 }
 
 pub fn save_data(data: &SaveData) -> io::Result<()> {
+    let path = &format!("{}/{}", std::env::current_exe()?.parent().unwrap().to_str().unwrap(), SAVE);
     let serialized = serde_json::to_string(data).unwrap();
 
     // Error check in case the file is missing
-    match fs::File::open(SAVE) {
+    match fs::File::open(path) {
         Err(e) => match e.kind() {
             io::ErrorKind::NotFound => println!(
                 "The save file is missing! \
@@ -64,6 +66,8 @@ pub fn save_data(data: &SaveData) -> io::Result<()> {
 
 pub fn new_save() -> io::Result<SaveData> {
     println!("Creating a new save file...");
-    fs::File::create(SAVE)?;
+    let path = &format!("{}/{}", std::env::current_exe()?.parent().unwrap().to_str().unwrap(), SAVE);
+    let form = serde_json::to_string(&SaveData::empty()).unwrap();
+    fs::write(path, form)?;
     Ok(SaveData::empty())
 }
