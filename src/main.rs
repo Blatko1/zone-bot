@@ -2,7 +2,7 @@ mod save;
 
 use binance::api::Binance;
 use binance::market::Market;
-use std::io;
+use std::{io, thread, sync::mpsc::{channel, Receiver}};
 
 fn main() {
     let data = match save::load_save() {
@@ -18,19 +18,45 @@ fn main() {
             _ => panic!("An error ocurred while parsing the save file: {}", e),
         },
     };
+    let zones = data.get_data();
 
-    let market = Market::new(None, None);
+    let input_receiver = input_listener_thread();
+    
+    loop {
+        match input_receiver.try_recv() {
+            Ok(input) => println!("{input}"),
+            Err(_) => (),
+        }
+        std::thread::sleep(std::time::Duration::from_millis(1));
+    }
+
+    //let market = Market::new(None, None);
+}
+
+pub fn input_listener_thread() -> Receiver<String> {
+    let (sender, receiver) = channel();
+    thread::spawn(move || {
+        let stdin = std::io::stdin();
+        println!("once");
+        let mut buf = String::new();
+        loop {
+            stdin.read_line(&mut buf).unwrap();
+            sender.send(buf.trim().to_string().clone()).unwrap();
+            buf.clear();
+        }
+    });
+    receiver
 }
 
 #[derive(Debug)]
-struct ZoneManager {
+pub struct ZoneManager {
     zones: Vec<Zone>,
 }
 
 /// Represents a "resistance" or a "support" zone with the `high` and the `low` limit.
 /// Priority represents the credibility of each zone.
 #[derive(Debug)]
-struct Zone {
+pub struct Zone {
     priority: Priority,
     high: PriceLevel,
     low: PriceLevel,
@@ -47,10 +73,10 @@ impl Zone {
 }
 
 #[derive(Debug)]
-struct PriceLevel(f64);
+pub struct PriceLevel(f64);
 
 #[derive(Debug, Clone, Copy)]
-enum Priority {
+pub enum Priority {
     High,
     Medium,
     Low,

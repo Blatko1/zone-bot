@@ -1,5 +1,7 @@
 use std::{fs, io};
 
+use crate::{ZoneManager, Zone, Priority, PriceLevel};
+
 const SAVE: &str = "bot_data.json";
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -11,6 +13,14 @@ impl SaveData {
     fn empty() -> Self {
         Self { zones: Vec::new() }
     }
+
+    pub fn get_data(self) -> ZoneManager {
+        let mut zones = Vec::with_capacity(self.zones.len());
+        for z in self.zones {
+            zones.push(z.into());
+        }
+        ZoneManager { zones }
+    }
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -20,8 +30,24 @@ struct ZoneData {
     low: PriceLevelData,
 }
 
+impl Into<Zone> for ZoneData {
+    fn into(self) -> Zone {
+        Zone {
+            priority: self.priority.into(),
+            high: self.high.into(),
+            low: self.low.into(),
+        }
+    }
+}
+
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 struct PriceLevelData(f64);
+
+impl Into<PriceLevel> for PriceLevelData {
+    fn into(self) -> PriceLevel {
+        PriceLevel(self.0)
+    }
+}
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 enum PriorityData {
@@ -30,8 +56,18 @@ enum PriorityData {
     Low = 3,
 }
 
+impl Into<Priority> for PriorityData {
+    fn into(self) -> Priority {
+        match self {
+            PriorityData::High => Priority::High,
+            PriorityData::Medium => Priority::Medium,
+            PriorityData::Low => Priority::Low,
+        }
+    }
+}
+
 pub fn load_save() -> io::Result<SaveData> {
-    let path = &format!("{}/{}", std::env::current_exe()?.parent().unwrap().to_str().unwrap(), SAVE);
+    let path = &format!("{}/{}", std::env::current_exe()?.parent().unwrap().to_str().unwrap().trim_start_matches("\\\\?\\"), SAVE);
     match fs::read(path) {
         Ok(f) => {
             println!("Save file found!");
