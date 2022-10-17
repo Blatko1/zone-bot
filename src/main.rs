@@ -2,7 +2,7 @@ mod save;
 
 use binance::api::Binance;
 use binance::market::Market;
-use std::{io, thread, sync::mpsc::{channel, Receiver}};
+use std::{io, thread, sync::mpsc};
 
 fn main() {
     let data = match save::load_save() {
@@ -25,7 +25,8 @@ fn main() {
     loop {
         match input_receiver.try_recv() {
             Ok(input) => println!("{input}"),
-            Err(_) => (),
+            Err(mpsc::TryRecvError::Empty) => (),
+            Err(e) => panic!("Input Error: {}", e)
         }
         std::thread::sleep(std::time::Duration::from_millis(1));
     }
@@ -33,11 +34,10 @@ fn main() {
     //let market = Market::new(None, None);
 }
 
-pub fn input_listener_thread() -> Receiver<String> {
-    let (sender, receiver) = channel();
+pub fn input_listener_thread() -> mpsc::Receiver<String> {
+    let (sender, receiver) = mpsc::channel();
     thread::spawn(move || {
         let stdin = std::io::stdin();
-        println!("once");
         let mut buf = String::new();
         loop {
             stdin.read_line(&mut buf).unwrap();
