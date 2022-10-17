@@ -18,20 +18,36 @@ fn main() {
             _ => panic!("An error ocurred while parsing the save file: {}", e),
         },
     };
-    let zones = data.get_data();
-
     let input_receiver = input_listener_thread();
+
+    let zones = data.get_data();
+    const SYMBOL: &str = "ETHUSDT";
+    let market = Market::new(None, None);
     
+    // In milliseconds:
+    const INPUT_INTERVAL: u64 = 100;
+    const MARKET_UPDATE_SECONDS: u64 = 10;
+    const MARKET_UPDATE_INTERVAL: u64 = MARKET_UPDATE_SECONDS * 1000;
+    const CYCLES_PER_UPDATE: u64 = MARKET_UPDATE_INTERVAL / INPUT_INTERVAL;
+
+    let mut update_counter = 0;
     loop {
         match input_receiver.try_recv() {
             Ok(input) => println!("{input}"),
             Err(mpsc::TryRecvError::Empty) => (),
             Err(e) => panic!("Input Error: {}", e)
         }
-        std::thread::sleep(std::time::Duration::from_millis(1));
-    }
 
-    //let market = Market::new(None, None);
+        // Check the market price
+        if update_counter >= CYCLES_PER_UPDATE {
+            println!("UPDATE!");
+            update_counter = 0;
+        }
+
+        update_counter += 1;
+
+        std::thread::sleep(std::time::Duration::from_millis(INPUT_INTERVAL));
+    }
 }
 
 pub fn input_listener_thread() -> mpsc::Receiver<String> {
@@ -40,8 +56,14 @@ pub fn input_listener_thread() -> mpsc::Receiver<String> {
         let stdin = std::io::stdin();
         let mut buf = String::new();
         loop {
-            stdin.read_line(&mut buf).unwrap();
-            sender.send(buf.trim().to_string().clone()).unwrap();
+            match stdin.read_line(&mut buf) {
+                Ok(_) => (),
+                Err(e) => panic!("Input Error: {e}"),
+            };
+            match sender.send(buf.trim().to_string()) {
+                Ok(_) => (),
+                Err(e) => panic!("Input Sender Error: {e}"),
+            };
             buf.clear();
         }
     });
@@ -51,6 +73,22 @@ pub fn input_listener_thread() -> mpsc::Receiver<String> {
 #[derive(Debug)]
 pub struct ZoneManager {
     zones: Vec<Zone>,
+    up_closest: Option<PriceLevel>,
+    down_closest: Option<PriceLevel>
+}
+
+impl ZoneManager {
+    pub fn from_zones(zones: Vec<Zone>) -> Self {
+        Self {
+            zones,
+            up_closest: None,
+            down_closest: None,
+        }
+    }
+
+    pub fn update(&mut self, cmp_price: PriceLevel) {
+        
+    }
 }
 
 /// Represents a "resistance" or a "support" zone with the `high` and the `low` limit.

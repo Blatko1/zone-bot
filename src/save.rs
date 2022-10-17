@@ -19,7 +19,7 @@ impl SaveData {
         for z in self.zones {
             zones.push(z.into());
         }
-        ZoneManager { zones }
+        ZoneManager::from_zones(zones)
     }
 }
 
