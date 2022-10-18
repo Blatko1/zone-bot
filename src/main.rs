@@ -2,7 +2,7 @@ mod save;
 
 use binance::api::Binance;
 use binance::market::Market;
-use crossterm::event::{poll, self};
+use crossterm::{event::{poll, self}, cursor, terminal};
 use std::{io, thread, sync::mpsc, time::{Duration, Instant}};
 
 fn main() {
@@ -28,11 +28,18 @@ fn main() {
     const MARKET_UPDATE_INTERVAL: u128 = 2 * 1000;
     const EVENT_WAIT_DURATION: Duration = Duration::from_millis(EVENT_WAIT_TIME);
     let mut now = Instant::now();
+    //terminal::enable_raw_mode().unwrap();
 
     loop {
 
         match process_events(EVENT_WAIT_DURATION) {
-            Ok(_) => (),
+            Ok(Some(event)) => match event {
+                event::Event::FocusGained => todo!(),
+                event::Event::FocusLost => todo!(),
+                event::Event::Key(_) => todo!(),
+                _ => unreachable!()
+            },
+            Ok(None) => (),
             Err(e) => panic!("Terminal Event Error: {e}"),
         }
 
@@ -45,13 +52,23 @@ fn main() {
     }
 }
 
-pub fn process_events(interval: Duration) -> crossterm::Result<()> {
+pub fn process_events(interval: Duration) -> crossterm::Result<Option<event::Event>> {
     if event::poll(interval)? {
         match event::read()? {
-            e => println!("Event found!: {e:?}"),
+            event => match event {
+                event::Event::FocusGained => return Ok(Some(event)),
+                event::Event::FocusLost => return Ok(Some(event)),
+                event::Event::Key(_) => return Ok(Some(event)),
+                _ => ()
+            }
         }
     }
-    Ok(())
+    Ok(None)
+}
+
+#[derive(Debug)]
+pub struct EventData {
+
 }
 
 #[derive(Debug)]
