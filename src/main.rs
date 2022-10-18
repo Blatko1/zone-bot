@@ -2,7 +2,8 @@ mod save;
 
 use binance::api::Binance;
 use binance::market::Market;
-use std::{io, thread, sync::mpsc};
+use crossterm::event::{poll, self};
+use std::{io, thread, sync::mpsc, time::{Duration, Instant}};
 
 fn main() {
     let data = match save::load_save() {
@@ -18,56 +19,39 @@ fn main() {
             _ => panic!("An error ocurred while parsing the save file: {}", e),
         },
     };
-    let input_receiver = input_listener_thread();
-
     let zones = data.get_data();
     const SYMBOL: &str = "ETHUSDT";
     let market = Market::new(None, None);
     
     // In milliseconds:
-    const INPUT_INTERVAL: u64 = 100;
-    const MARKET_UPDATE_SECONDS: u64 = 10;
-    const MARKET_UPDATE_INTERVAL: u64 = MARKET_UPDATE_SECONDS * 1000;
-    const CYCLES_PER_UPDATE: u64 = MARKET_UPDATE_INTERVAL / INPUT_INTERVAL;
+    const EVENT_WAIT_TIME: u64 = 500;
+    const MARKET_UPDATE_INTERVAL: u128 = 2 * 1000;
+    const EVENT_WAIT_DURATION: Duration = Duration::from_millis(EVENT_WAIT_TIME);
+    let mut now = Instant::now();
 
-    let mut update_counter = 0;
     loop {
-        match input_receiver.try_recv() {
-            Ok(input) => println!("{input}"),
-            Err(mpsc::TryRecvError::Empty) => (),
-            Err(e) => panic!("Input Error: {}", e)
+
+        match process_events(EVENT_WAIT_DURATION) {
+            Ok(_) => (),
+            Err(e) => panic!("Terminal Event Error: {e}"),
         }
 
         // Check the market price
-        if update_counter >= CYCLES_PER_UPDATE {
+        let elapsed = now.elapsed().as_millis();
+        if elapsed > MARKET_UPDATE_INTERVAL {
             println!("UPDATE!");
-            update_counter = 0;
+            now = Instant::now();
         }
-
-        update_counter += 1;
-
-        std::thread::sleep(std::time::Duration::from_millis(INPUT_INTERVAL));
     }
 }
 
-pub fn input_listener_thread() -> mpsc::Receiver<String> {
-    let (sender, receiver) = mpsc::channel();
-    thread::spawn(move || {
-        let stdin = std::io::stdin();
-        let mut buf = String::new();
-        loop {
-            match stdin.read_line(&mut buf) {
-                Ok(_) => (),
-                Err(e) => panic!("Input Error: {e}"),
-            };
-            match sender.send(buf.trim().to_string()) {
-                Ok(_) => (),
-                Err(e) => panic!("Input Sender Error: {e}"),
-            };
-            buf.clear();
+pub fn process_events(interval: Duration) -> crossterm::Result<()> {
+    if event::poll(interval)? {
+        match event::read()? {
+            e => println!("Event found!: {e:?}"),
         }
-    });
-    receiver
+    }
+    Ok(())
 }
 
 #[derive(Debug)]
