@@ -1,6 +1,6 @@
 use std::{fs, io};
 
-use crate::{ZoneManager, Zone, Priority, PriceLevel};
+use crate::zone::{PriceLevel, Priority, Zone, ZoneManager};
 
 const SAVE: &str = "bot_data.json";
 
@@ -67,7 +67,16 @@ impl Into<Priority> for PriorityData {
 }
 
 pub fn load_save() -> io::Result<SaveData> {
-    let path = &format!("{}/{}", std::env::current_exe()?.parent().unwrap().to_str().unwrap().trim_start_matches("\\\\?\\"), SAVE);
+    let path = &format!(
+        "{}/{}",
+        std::env::current_exe()?
+            .parent()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .trim_start_matches("\\\\?\\"),
+        SAVE
+    );
     match fs::read(path) {
         Ok(f) => {
             println!("Save file found!");
@@ -82,7 +91,11 @@ pub fn load_save() -> io::Result<SaveData> {
 }
 
 pub fn save_data(data: &SaveData) -> io::Result<()> {
-    let path = &format!("{}/{}", std::env::current_exe()?.parent().unwrap().to_str().unwrap(), SAVE);
+    let path = &format!(
+        "{}/{}",
+        std::env::current_exe()?.parent().unwrap().to_str().unwrap(),
+        SAVE
+    );
     let serialized = serde_json::to_string(data).unwrap();
 
     // Error check in case the file is missing
@@ -94,7 +107,7 @@ pub fn save_data(data: &SaveData) -> io::Result<()> {
             ),
             _ => return Err(e),
         },
-        _ => ()
+        _ => (),
     }
 
     fs::write(SAVE, serialized)
@@ -102,7 +115,11 @@ pub fn save_data(data: &SaveData) -> io::Result<()> {
 
 pub fn new_save() -> io::Result<SaveData> {
     println!("Creating a new save file...");
-    let path = &format!("{}/{}", std::env::current_exe()?.parent().unwrap().to_str().unwrap(), SAVE);
+    let path = &format!(
+        "{}/{}",
+        std::env::current_exe()?.parent().unwrap().to_str().unwrap(),
+        SAVE
+    );
     let form = serde_json::to_string(&SaveData::empty()).unwrap();
     fs::write(path, form)?;
     Ok(SaveData::empty())
