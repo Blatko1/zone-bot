@@ -5,14 +5,11 @@ mod zone;
 use binance::api::Binance;
 use binance::market::Market;
 use crossterm::{
-    cursor,
-    event::{self, poll, KeyEvent},
+    event::{self, KeyEvent, Event},
     terminal,
 };
 use std::{
-    fmt::Write,
     io::{self},
-    str::CharIndices,
     time::{Duration, Instant},
 };
 use tui::{
@@ -66,7 +63,7 @@ fn main_loop<B: Backend>(mut intf: Interface<B>, zones: ZoneManager) {
         let elapsed = last.elapsed();
         let timeout = EVENT_DURATION
             .checked_sub(elapsed)
-            .unwrap_or_else(|| Duration::ZERO);
+            .unwrap_or(Duration::ZERO);
 
         match poll_events(timeout) {
             Ok(Some(event)) => match event {
@@ -95,13 +92,12 @@ fn main_loop<B: Backend>(mut intf: Interface<B>, zones: ZoneManager) {
 
 fn poll_events(interval: Duration) -> crossterm::Result<Option<event::Event>> {
     if event::poll(interval)? {
-        match event::read()? {
-            event => match event {
-                event::Event::FocusGained => return Ok(Some(event)),
-                event::Event::FocusLost => return Ok(Some(event)),
-                event::Event::Key(_) => return Ok(Some(event)),
-                _ => (),
-            },
+        let event = event::read()?;
+        match event {
+            Event::FocusGained => return Ok(Some(event)),
+            Event::FocusLost => return Ok(Some(event)),
+            Event::Key(_) => return Ok(Some(event)),
+            _ => (),
         }
     }
     Ok(None)

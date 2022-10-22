@@ -30,12 +30,12 @@ struct ZoneData {
     low: PriceLevelData,
 }
 
-impl Into<Zone> for ZoneData {
-    fn into(self) -> Zone {
-        Zone {
-            priority: self.priority.into(),
-            high: self.high.into(),
-            low: self.low.into(),
+impl From<ZoneData> for Zone {
+    fn from(data: ZoneData) -> Self {
+        Self {
+            priority: data.priority.into(),
+            high: data.high.into(),
+            low: data.low.into(),
         }
     }
 }
@@ -43,9 +43,9 @@ impl Into<Zone> for ZoneData {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 struct PriceLevelData(f64);
 
-impl Into<PriceLevel> for PriceLevelData {
-    fn into(self) -> PriceLevel {
-        PriceLevel(self.0)
+impl From<PriceLevelData> for PriceLevel {
+    fn from(data: PriceLevelData) -> Self {
+        Self(data.0)
     }
 }
 
@@ -56,9 +56,9 @@ enum PriorityData {
     Low = 3,
 }
 
-impl Into<Priority> for PriorityData {
-    fn into(self) -> Priority {
-        match self {
+impl From<PriorityData> for Priority {
+    fn from(data: PriorityData) -> Self {
+        match data {
             PriorityData::High => Priority::High,
             PriorityData::Medium => Priority::Medium,
             PriorityData::Low => Priority::Low,
@@ -99,15 +99,14 @@ pub fn save_data(data: &SaveData) -> io::Result<()> {
     let serialized = serde_json::to_string(data).unwrap();
 
     // Error check in case the file is missing
-    match fs::File::open(path) {
-        Err(e) => match e.kind() {
+    if let Err(e) = fs::File::open(path) {
+        match e.kind() {
             io::ErrorKind::NotFound => println!(
                 "The save file is missing! \
-            Creating a new one with memorized data."
+        Creating a new one with memorized data."
             ),
             _ => return Err(e),
-        },
-        _ => (),
+        }
     }
 
     fs::write(SAVE, serialized)
