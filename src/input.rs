@@ -23,7 +23,7 @@ impl InputHandler {
         }
     }
 
-    pub fn editing_event(&mut self, event: KeyEvent) -> Option<Interruption> {
+    pub fn process_input(&mut self, event: KeyEvent) -> Option<Interruption> {
         let key = event.code;
         match key {
             KeyCode::Backspace => self.backspace_key(),

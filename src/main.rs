@@ -5,7 +5,7 @@ mod zone;
 use binance::api::Binance;
 use binance::market::Market;
 use crossterm::{
-    event::{self, KeyEvent, Event},
+    event::{self, Event, KeyEvent},
     terminal,
 };
 use std::{
@@ -22,24 +22,41 @@ use crate::input::{InputHandler, Interruption};
 
 pub struct Interface<B: Backend> {
     terminal: Terminal<B>,
+    input: InputHandler,
     input_mode: InputMode,
+    exit: bool
 }
 
 impl<B: Backend> Interface<B> {
     pub fn new(terminal: Terminal<B>) -> Self {
         Self {
             terminal,
+            input: InputHandler::new(),
             input_mode: InputMode::Editing,
+            exit: false
         }
     }
 
-    pub fn process_events(&mut self, event: KeyEvent) {}
+    pub fn process_controls(&mut self, event: KeyEvent) {}
 
-    pub fn process_interruption(&mut self, interruption: Interruption) {
+    pub fn process_editing(&mut self, event: KeyEvent) {
+        self.terminal.clear().unwrap();
+        let interruption = match self.input.process_input(event) {
+            Some(intr) => intr,
+            None => {
+                println!("input: {}", self.input);
+                return;
+            }
+        };
+
         match interruption {
             Interruption::Enter(buf) => println!("You entered: {buf}"),
             Interruption::Esc => (),
         }
+    }
+
+    pub fn should_exit(&self) -> bool {
+        self.exit
     }
 }
 
@@ -57,7 +74,6 @@ fn main_loop<B: Backend>(mut intf: Interface<B>, zones: ZoneManager) {
     const EVENT_INTERVAL: u64 = 2 * 1000;
     const EVENT_DURATION: Duration = Duration::from_millis(EVENT_INTERVAL);
 
-    let mut input = InputHandler::new();
     let mut last = Instant::now();
     loop {
         let elapsed = last.elapsed();
@@ -66,18 +82,20 @@ fn main_loop<B: Backend>(mut intf: Interface<B>, zones: ZoneManager) {
             .unwrap_or(Duration::ZERO);
 
         match poll_events(timeout) {
-            Ok(Some(event)) => match event {
-                event::Event::FocusGained => (),
-                event::Event::FocusLost => (),
-                event::Event::Key(event) => match intf.input_mode {
-                    InputMode::Editing => match input.editing_event(event) {
-                        Some(intr) => intf.process_interruption(intr),
-                        None => println!("input: {}", input),
+            Ok(Some(event)) => {
+                match event {
+                    event::Event::FocusGained => (),
+                    event::Event::FocusLost => (),
+                    event::Event::Key(event) => match intf.input_mode {
+                        InputMode::Editing => intf.process_editing(event),
+                        InputMode::Control => intf.process_controls(event),
                     },
-                    InputMode::Control => intf.process_events(event),
-                },
-                _ => unreachable!(),
-            },
+                    _ => unreachable!(),
+                }
+                if intf.should_exit() {
+
+                }
+            }
             Ok(None) => (),
             Err(e) => panic!("Terminal Event Error: {e}"),
         }
