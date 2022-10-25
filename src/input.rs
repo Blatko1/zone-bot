@@ -1,7 +1,8 @@
 use crossterm::event::{KeyCode, KeyEvent};
 
-// TODO
+// TODO change capacity
 const INPUT_BUFFER_CAPACITY: usize = 10;
+const CURSOR_BEGINNING: CursorPosition = CursorPosition::Pos(0);
 
 /// Handler for inputs trough all [`InputMode`] modes.
 #[derive(Debug)]
@@ -30,9 +31,9 @@ impl InputHandler {
             KeyCode::Backspace => self.backspace_key(),
             KeyCode::Left => self.left_key(),
             KeyCode::Right => self.right_key(),
-            //event::KeyCode::Up => todo!(),
-            //event::KeyCode::Down => todo!(),
-            KeyCode::Home => self.cursor = CursorPosition::Pos(0),
+            KeyCode::Up => self.cursor = CursorPosition::End,
+            KeyCode::Down => self.cursor = CURSOR_BEGINNING,
+            KeyCode::Home => self.cursor = CURSOR_BEGINNING,
             KeyCode::End => self.cursor = CursorPosition::End,
             KeyCode::Delete => self.delete_key(),
             KeyCode::Char(c) => self.add_char(c),
