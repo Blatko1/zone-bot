@@ -1,15 +1,17 @@
 mod input;
+mod interface;
 mod save;
 mod zone;
 
 use binance::api::Binance;
 use binance::market::Market;
 use crossterm::{
-    event::{self, Event, KeyEvent},
+    event::{self, Event},
     terminal,
 };
+use interface::Interface;
 use std::{
-    io::{self},
+    io,
     time::{Duration, Instant},
 };
 use tui::{
@@ -18,52 +20,7 @@ use tui::{
 };
 use zone::ZoneManager;
 
-use crate::input::{InputHandler, Interruption};
-
-pub struct Interface<B: Backend> {
-    terminal: Terminal<B>,
-    input: InputHandler,
-    input_mode: InputMode,
-    exit: bool
-}
-
-impl<B: Backend> Interface<B> {
-    pub fn new(terminal: Terminal<B>) -> Self {
-        Self {
-            terminal,
-            input: InputHandler::new(),
-            input_mode: InputMode::Editing,
-            exit: false
-        }
-    }
-
-    pub fn process_controls(&mut self, event: KeyEvent) {}
-
-    pub fn process_editing(&mut self, event: KeyEvent) {
-        self.terminal.clear().unwrap();
-        let interruption = match self.input.process_input(event) {
-            Some(intr) => intr,
-            None => {
-                println!("input: {}", self.input);
-                return;
-            }
-        };
-
-        match interruption {
-            Interruption::Enter(buf) => println!("You entered: {buf}"),
-            Interruption::Esc => (),
-        }
-    }
-
-    pub fn should_exit(&self) -> bool {
-        self.exit
-    }
-}
-
-pub enum InputMode {
-    Editing,
-    Control,
-}
+use crate::interface::InputMode;
 
 fn main_loop<B: Backend>(mut intf: Interface<B>, zones: ZoneManager) {
     // Market
@@ -86,14 +43,14 @@ fn main_loop<B: Backend>(mut intf: Interface<B>, zones: ZoneManager) {
                 match event {
                     event::Event::FocusGained => (),
                     event::Event::FocusLost => (),
-                    event::Event::Key(event) => match intf.input_mode {
+                    event::Event::Key(event) => match intf.input_mode() {
                         InputMode::Editing => intf.process_editing(event),
                         InputMode::Control => intf.process_controls(event),
                     },
                     _ => unreachable!(),
                 }
                 if intf.should_exit() {
-
+                    break;
                 }
             }
             Ok(None) => (),
@@ -102,7 +59,7 @@ fn main_loop<B: Backend>(mut intf: Interface<B>, zones: ZoneManager) {
 
         // Check the market price
         if elapsed >= EVENT_DURATION {
-            //println!("UPDATE!");
+            //println!("ETHBUSD price: {:?}", market.get_price(SYMBOL).unwrap());
             last = Instant::now();
         }
     }

@@ -4,6 +4,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 const INPUT_BUFFER_CAPACITY: usize = 10;
 
 /// Handler for inputs trough all [`InputMode`] modes.
+#[derive(Debug)]
 pub struct InputHandler {
     buffer: String,
     /// Preferably used because of chars made from multiple bytes.
