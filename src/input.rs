@@ -170,6 +170,10 @@ impl InputHandler {
         self.cursor = CursorPosition::End;
     }
 
+    pub fn current_input(&self) -> &str {
+        &self.buffer
+    }
+
     pub fn get_cursor_position(&self) -> usize {
         match self.cursor {
             CursorPosition::Pos(i) => i,

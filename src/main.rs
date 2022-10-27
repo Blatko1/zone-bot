@@ -7,7 +7,7 @@ use binance::api::Binance;
 use binance::market::Market;
 use crossterm::{
     event::{self, Event},
-    terminal,
+    terminal::{self, EnterAlternateScreen, LeaveAlternateScreen}, execute,
 };
 use interface::Interface;
 use std::{
@@ -33,6 +33,8 @@ fn main_loop<B: Backend>(mut intf: Interface<B>, zones: ZoneManager) {
 
     let mut last = Instant::now();
     loop {
+        intf.render_ui();
+
         let elapsed = last.elapsed();
         let timeout = EVENT_DURATION
             .checked_sub(elapsed)
@@ -92,17 +94,22 @@ fn main() {
             _ => panic!("An error ocurred while parsing the save file: {}", e),
         },
     };
+    // Market Zones
+    let zones = data.get_data();
+
     // Terminal
-    let stdout = io::stdout();
+    // TODO remove the unwraps and add the "?"
+    terminal::enable_raw_mode().unwrap();
+    let mut stdout = io::stdout();
+    execute!(stdout, EnterAlternateScreen).unwrap();
     let backend = backend::CrosstermBackend::new(stdout);
     let terminal = Terminal::new(backend).unwrap();
 
     // App interface
     let interface = Interface::new(terminal);
 
-    // Market Zones
-    let zones = data.get_data();
-
-    terminal::enable_raw_mode().unwrap();
     main_loop(interface, zones);
+
+    terminal::disable_raw_mode().unwrap();
+    execute!(io::stdout(), LeaveAlternateScreen).unwrap();
 }

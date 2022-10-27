@@ -1,7 +1,9 @@
-use crossterm::event::KeyEvent;
-use tui::{backend::Backend, Terminal};
+use std::io;
 
-use crate::input::{Interruption, InputHandler};
+use crossterm::event::KeyEvent;
+use tui::{backend::Backend, terminal::CompletedFrame, Frame, Terminal, layout::{Layout, Direction, Constraint}};
+
+use crate::input::{self, InputHandler, Interruption};
 
 pub struct Interface<B: Backend> {
     terminal: Terminal<B>,
@@ -20,10 +22,17 @@ impl<B: Backend> Interface<B> {
         }
     }
 
+    pub fn render_ui(&mut self) -> io::Result<CompletedFrame> {
+        let ui = |frame: &mut Frame<B>| {
+            let chunks = Layout::default().direction(Direction::Vertical).margin(2).constraints([Constraint::Length(3), Constraint::Length(2)].as_ref()).split(area)
+        };
+
+        self.terminal.draw(ui)
+    }
+
     pub fn process_controls(&mut self, event: KeyEvent) {}
 
     pub fn process_editing(&mut self, event: KeyEvent) {
-        self.terminal.clear().unwrap();
         let interruption = match self.input.process_input(event) {
             Some(intr) => intr,
             None => {
@@ -32,9 +41,11 @@ impl<B: Backend> Interface<B> {
             }
         };
 
-        match interruption {
-            Interruption::Enter(buf) => println!("You entered: {buf}"),
-            Interruption::Esc => self.exit = true,
+        if let Some(interruption) = self.input.process_input(event) {
+            match interruption {
+                Interruption::Enter(buf) => println!("You entered: {buf}"),
+                Interruption::Esc => self.exit = true,
+            }
         }
     }
 
