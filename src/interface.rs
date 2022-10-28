@@ -1,7 +1,14 @@
 use std::io;
 
 use crossterm::event::KeyEvent;
-use tui::{backend::Backend, terminal::CompletedFrame, Frame, Terminal, layout::{Layout, Direction, Constraint}};
+use tui::{
+    backend::Backend,
+    layout::{Alignment, Constraint, Corner, Direction, Layout},
+    terminal::CompletedFrame,
+    text::{Span, Spans},
+    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph},
+    Frame, Terminal,
+};
 
 use crate::input::{self, InputHandler, Interruption};
 
@@ -23,8 +30,51 @@ impl<B: Backend> Interface<B> {
     }
 
     pub fn render_ui(&mut self) -> io::Result<CompletedFrame> {
+        let size = self.terminal.size().unwrap();
         let ui = |frame: &mut Frame<B>| {
-            let chunks = Layout::default().direction(Direction::Vertical).margin(2).constraints([Constraint::Length(3), Constraint::Length(2)].as_ref()).split(area)
+            // Split the terminal into 2 parts left and right:
+            let left_right_main = Layout::default()
+                .direction(Direction::Horizontal)
+                .margin(1)
+                .constraints(
+                    [Constraint::Percentage(50), Constraint::Percentage(50)]
+                        .as_ref(),
+                )
+                .split(size);
+            // Split the right part into a big one on top and the small one on bottom:
+            let top_bottom_second = Layout::default()
+                .direction(Direction::Vertical)
+                .margin(0)
+                .constraints(
+                    [Constraint::Percentage(90), Constraint::Percentage(10)]
+                        .as_ref(),
+                )
+                .split(left_right_main[1]);
+
+            // ____________RENDER STUFF ONTO THE RIGHT PART OF THE TERMINAL: ____________
+            let items = vec![
+                ListItem::new("mama ti!"),
+                ListItem::new("tata ti!"),
+                ListItem::new("baka ti!"),
+            ];
+            let alerts_list =
+                List::new(items).start_corner(Corner::BottomLeft).block(
+                    Block::default()
+                        .title("Alerts List")
+                        .title_alignment(Alignment::Center)
+                        .borders(Borders::all())
+                        .border_type(BorderType::Rounded),
+                );
+            frame.render_widget(alerts_list, top_bottom_second[0]);
+
+            let text = vec![Spans::from(vec![Span::from("Market price:")])];
+            let price_paragraph = Paragraph::new(text).block(
+                Block::default()
+                    .title("Live Price")
+                    .border_type(BorderType::Double)
+                    .borders(Borders::all()),
+            );
+            frame.render_widget(price_paragraph, top_bottom_second[1]);
         };
 
         self.terminal.draw(ui)

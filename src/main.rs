@@ -7,7 +7,8 @@ use binance::api::Binance;
 use binance::market::Market;
 use crossterm::{
     event::{self, Event},
-    terminal::{self, EnterAlternateScreen, LeaveAlternateScreen}, execute,
+    execute,
+    terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use interface::Interface;
 use std::{
