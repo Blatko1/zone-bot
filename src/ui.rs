@@ -1,0 +1,148 @@
+use tui::{Frame, backend::Backend};
+
+struct CommandsParagraph {
+
+}
+
+trait Renderable<B: Backend> {
+    fn render(&self, frame: Frame<B>);
+}
+
+//// Draws the UI and holds all data used for drawing.
+//struct UI<B: Backend> {
+//    phantom: PhantomData<B>,
+//}
+//
+//impl<B: Backend> UI<B> {
+//    fn new() -> Self {
+//        Self {
+//            phantom: PhantomData,
+//        }
+//    }
+//
+//    fn draw(&self, frame: &mut Frame<B>, size: Rect) {
+//        let chunks = Layout::default()
+//            .direction(Direction::Vertical)
+//            .margin(1)
+//            .constraints([Constraint::Min(10), Constraint::Length(3)])
+//            .split(size);
+//
+//        let price = vec![Spans::from(vec![Span::styled(
+//            "{SYMBOL}",
+//            Style::default().add_modifier(Modifier::BOLD),
+//        ), Span::raw("{price}")])];
+//        let live_price_widget = Paragraph::new(price)
+//            .block(
+//                Block::default()
+//                    .title("Live Price")
+//                    .borders(Borders::all())
+//                    .style(Style::default().fg(Color::White).bg(Color::Black)),
+//            )
+//            .style(Style::default().fg(Color::White).bg(Color::Black))
+//            .alignment(Alignment::Center);
+//        frame.render_widget(live_price_widget, chunks[1]);
+//    }
+//
+//    fn draw_left_half(&self, frame: &mut Frame<B>, area: Rect) {
+//        // Split left half into 2 chunks:
+//        let chunks = Layout::default()
+//            .direction(Direction::Vertical)
+//            .constraints([Constraint::Length(8), Constraint::Min(6)])
+//            .split(area);
+//
+//        self.draw_zone_list(frame, chunks[0]);
+//        self.draw_zone_chart(frame, chunks[1]);
+//    }
+//
+//    fn draw_right_half(&self, frame: &mut Frame<B>, area: Rect) {
+//        // Split the area into 3 chunks:
+//        let chunks = Layout::default()
+//            .direction(Direction::Vertical)
+//            .constraints([
+//                Constraint::Percentage(50),
+//                Constraint::Length(4),
+//                Constraint::Max(9),
+//            ])
+//            .split(area);
+//
+//        // Draw the first chunk:
+//        let alert_items = [
+//            ListItem::new("mama ti!"),
+//            ListItem::new("tata ti!"),
+//            ListItem::new("baka ti!"),
+//        ];
+//        let alerts_list = List::new(alert_items)
+//            .start_corner(Corner::BottomLeft)
+//            .block(
+//                Block::default()
+//                    .title("Alerts List")
+//                    .title_alignment(Alignment::Center)
+//                    .borders(Borders::all())
+//                    .border_type(BorderType::Thick),
+//            );
+//        frame.render_widget(alerts_list, chunks[0]);
+//
+//        // Draw the second chunk:
+//        let market_price = vec![Spans::from(vec![Span::from("Market price:")])];
+//        let price_paragraph = Paragraph::new(market_price).block(
+//            Block::default()
+//                .title("Live Price")
+//                .border_type(BorderType::Double)
+//                .borders(Borders::all()),
+//        );
+//        frame.render_widget(price_paragraph, chunks[1]);
+//
+//        // Draw the third chunk:
+//        let volume_chart = BarChart::default()
+//            .block(
+//                Block::default()
+//                    .title("Volume chart")
+//                    .borders(Borders::all()),
+//            )
+//            .bar_width(2)
+//            .bar_gap(1)
+//            .bar_set(bar::THREE_LEVELS)
+//            .data(&[("B1", 1), ("B2", 4), ("B3", 3), ("B0", 6)]);
+//        frame.render_widget(volume_chart, chunks[2]);
+//    }
+//
+//    fn draw_zone_list(&self, frame: &mut Frame<B>, area: Rect) {
+//        // Split area into 2 chunks:
+//        let input_chunk = Layout::default()
+//            .margin(1)
+//            .direction(Direction::Horizontal)
+//            .constraints([
+//                Constraint::Percentage(40),
+//                Constraint::Percentage(60),
+//            ])
+//            .split(area);
+//
+//        // Draw the surrounding barrier
+//        let block = Block::default()
+//            .borders(Borders::all())
+//            .border_type(BorderType::Plain)
+//            .title("Zone List");
+//        frame.render_widget(block, area);
+//
+//        // Draw the zone list:
+//        let list_items = [
+//            ListItem::new("- Zone1"),
+//            ListItem::new("- Zone2"),
+//            ListItem::new("- Zone3"),
+//            ListItem::new("- Zone4"),
+//            ListItem::new("- Zone5"),
+//        ];
+//        let zone_list = List::new(list_items)
+//            .block(Block::default().title("Zones").borders(Borders::all()))
+//            .style(Style::default().fg(Color::White))
+//            .highlight_symbol(">>")
+//            .start_corner(Corner::TopLeft);
+//        frame.render_widget(zone_list, input_chunk[0]);
+//    }
+//
+//    // TODO
+//    fn draw_zone_chart(&self, frame: &mut Frame<B>, area: Rect) {
+//        let block = Block::default().borders(Borders::all());
+//        frame.render_widget(block, area);
+//    }
+//}

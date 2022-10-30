@@ -1,7 +1,9 @@
 mod input;
-mod interface;
+mod console;
 mod save;
 mod zone;
+mod tracker;
+mod ui;
 
 use binance::api::Binance;
 use binance::market::Market;
@@ -10,7 +12,7 @@ use crossterm::{
     execute,
     terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use interface::Interface;
+use console::Console;
 use std::{
     io,
     time::{Duration, Instant},
@@ -21,9 +23,9 @@ use tui::{
 };
 use zone::ZoneManager;
 
-use crate::interface::InputMode;
+use crate::console::InputMode;
 
-fn main_loop<B: Backend>(mut intf: Interface<B>, zones: ZoneManager) {
+fn main_loop<B: Backend>(mut console: Console<B>, zones: ZoneManager) {
     // Market
     const SYMBOL: &str = "ETHUSDT";
     let market = Market::new(None, None);
@@ -34,7 +36,7 @@ fn main_loop<B: Backend>(mut intf: Interface<B>, zones: ZoneManager) {
 
     let mut last = Instant::now();
     loop {
-        intf.render_ui();
+        console.render_ui();
 
         let elapsed = last.elapsed();
         let timeout = EVENT_DURATION
@@ -46,13 +48,13 @@ fn main_loop<B: Backend>(mut intf: Interface<B>, zones: ZoneManager) {
                 match event {
                     event::Event::FocusGained => (),
                     event::Event::FocusLost => (),
-                    event::Event::Key(event) => match intf.input_mode() {
-                        InputMode::Editing => intf.process_editing(event),
-                        InputMode::Control => intf.process_controls(event),
+                    event::Event::Key(event) => match console.input_mode() {
+                        InputMode::Editing => console.process_editing(event),
+                        InputMode::Control => console.process_controls(event),
                     },
                     _ => unreachable!(),
                 }
-                if intf.should_exit() {
+                if console.should_exit() {
                     break;
                 }
             }
@@ -107,7 +109,7 @@ fn main() {
     let terminal = Terminal::new(backend).unwrap();
 
     // App interface
-    let interface = Interface::new(terminal);
+    let interface = Console::new(terminal);
 
     main_loop(interface, zones);
 
