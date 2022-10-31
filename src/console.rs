@@ -1,29 +1,16 @@
-use std::{io, marker::PhantomData};
+use std::io;
 
 use crossterm::event::KeyEvent;
-use tui::{
-    backend::Backend,
-    layout::{Alignment, Constraint, Corner, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
-    symbols::bar,
-    terminal::CompletedFrame,
-    text::{Span, Spans},
-    widgets::{
-        BarChart, Block, BorderType, Borders, List, ListItem, Paragraph, Wrap,
-    },
-    Frame, Terminal,
-};
+use tui::{backend::Backend, terminal::CompletedFrame, Terminal};
 
 use crate::{
     input::{InputHandler, Interruption},
-    tracker::MarketTracker,
     ui::UI,
 };
 
 pub struct Console<B: Backend> {
     terminal: Terminal<B>,
     ui: UI,
-    tracker: MarketTracker,
 
     input: InputHandler,
     input_mode: InputMode,
@@ -36,7 +23,6 @@ impl<B: Backend> Console<B> {
         Self {
             terminal,
             ui: UI::init(),
-            tracker: MarketTracker::new(),
 
             input: InputHandler::new(),
             input_mode: InputMode::Editing,

@@ -9,12 +9,14 @@ use tui::{
 
 pub struct UI {
     commands: CommandsPar,
+    live_price: LivePricePar,
 }
 
 impl UI {
     pub fn init() -> Self {
         Self {
-            commands: CommandsPar::new(),
+            commands: CommandsPar::default(),
+            live_price: LivePricePar::default()
         }
     }
 
@@ -30,48 +32,59 @@ impl UI {
             .split(terminal_area);
 
         self.commands.render(frame, chunks[0]);
+        self.live_price.render(frame, chunks[1]);
     }
 }
 
+#[derive(Debug)]
 struct LivePricePar {
-
+    symbol: String,
+    price: String,
+    // TODO volume:
+    // 24h change:
+    // 7d change:
 }
 
 impl LivePricePar {
-    pub fn new() -> Self {
-        Self {
-
-        }
-    }
-
-    pub fn update(&mut self) {
-
-    }
+    pub fn update(&mut self) {}
 }
 
 impl Renderable for LivePricePar {
     fn render<B: Backend>(&self, frame: &mut Frame<B>, area: Rect) {
-        todo!()
+        let text = vec![Spans::from(vec![
+            Span::styled(&self.symbol, Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(": "), Span::raw(&self.price)
+        ])];
+
+        let paragraph = Paragraph::new(text)
+        .block(Block::default().borders(Borders::all()).title("Live Price"))
+        .alignment(Alignment::Center);
+
+        frame.render_widget(paragraph, area);
     }
 }
 
+impl Default for LivePricePar {
+    fn default() -> Self {
+        Self {
+            symbol: String::from("{SYMBOL}"),
+            price: String::from("{PRICE}"),
+        }
+    }
+}
+
+#[derive(Debug, Default)]
 struct CommandsPar;
-
-impl CommandsPar {
-    fn new() -> Self {
-        Self
-    }
-}
 
 impl Renderable for CommandsPar {
     fn render<B: Backend>(&self, frame: &mut Frame<B>, area: Rect) {
         // TODO maybe add custom owned struct instead of creating a new one
-        let content = vec![Spans::from(vec![
+        let text = vec![Spans::from(vec![
             Span::styled("ESC", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(" - exit the input mode"),
         ])];
 
-        let paragraph = Paragraph::new(content)
+        let paragraph = Paragraph::new(text)
             .block(Block::default().borders(Borders::all()).title("Commands"))
             .alignment(Alignment::Left)
             .wrap(Wrap { trim: true });

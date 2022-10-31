@@ -5,8 +5,6 @@ mod tracker;
 mod ui;
 mod zone;
 
-use binance::api::Binance;
-use binance::market::Market;
 use console::Console;
 use crossterm::{
     event::{self, Event},
@@ -17,6 +15,7 @@ use std::{
     io,
     time::{Duration, Instant},
 };
+use tracker::MarketTracker;
 use tui::{
     backend::{self, Backend},
     Terminal,
@@ -25,18 +24,18 @@ use zone::ZoneManager;
 
 use crate::console::InputMode;
 
+const DEFAULT_SYMBOL: &str = "ETHUSDT";
+// In milliseconds:
+const EVENT_INTERVAL: u64 = 2 * 1000;
+const EVENT_DURATION: Duration = Duration::from_millis(EVENT_INTERVAL);
+
 fn main_loop<B: Backend>(mut console: Console<B>, zones: ZoneManager) {
-    // Market
-    const SYMBOL: &str = "ETHUSDT";
-    let market = Market::new(None, None);
-
-    // In milliseconds:
-    const EVENT_INTERVAL: u64 = 2 * 1000;
-    const EVENT_DURATION: Duration = Duration::from_millis(EVENT_INTERVAL);
-
     let mut last = Instant::now();
     loop {
-        console.render_ui();
+        match console.render_ui() {
+            Ok(_) => (),
+            Err(err) => panic!("Terminal Render Error: {err}"),
+        };
 
         let elapsed = last.elapsed();
         let timeout = EVENT_DURATION
@@ -64,7 +63,6 @@ fn main_loop<B: Backend>(mut console: Console<B>, zones: ZoneManager) {
 
         // Check the market price
         if elapsed >= EVENT_DURATION {
-            //println!("ETHBUSD price: {:?}", market.get_price(SYMBOL).unwrap());
             last = Instant::now();
         }
     }
@@ -105,13 +103,16 @@ fn main() {
     terminal::enable_raw_mode().unwrap();
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen).unwrap();
+
+    // Console
     let backend = backend::CrosstermBackend::new(stdout);
     let terminal = Terminal::new(backend).unwrap();
+    let console = Console::new(terminal);
 
-    // App interface
-    let interface = Console::new(terminal);
+    // Market
+    let tracker = MarketTracker::new(DEFAULT_SYMBOL);
 
-    main_loop(interface, zones);
+    main_loop(console, zones);
 
     terminal::disable_raw_mode().unwrap();
     execute!(io::stdout(), LeaveAlternateScreen).unwrap();
