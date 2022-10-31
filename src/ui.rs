@@ -1,11 +1,87 @@
-use tui::{Frame, backend::Backend};
+use tui::{
+    backend::Backend,
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    style::{Modifier, Style},
+    text::{Span, Spans},
+    widgets::{Block, Borders, Paragraph, Wrap},
+    Frame,
+};
 
-struct CommandsParagraph {
+pub struct UI {
+    commands: CommandsPar,
+}
+
+impl UI {
+    pub fn init() -> Self {
+        Self {
+            commands: CommandsPar::new(),
+        }
+    }
+
+    pub fn render<B: Backend>(
+        &self,
+        frame: &mut Frame<B>,
+        terminal_area: Rect,
+    ) {
+        let chunks = Layout::default()
+            .margin(1)
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Min(10), Constraint::Length(3)])
+            .split(terminal_area);
+
+        self.commands.render(frame, chunks[0]);
+    }
+}
+
+struct LivePricePar {
 
 }
 
-trait Renderable<B: Backend> {
-    fn render(&self, frame: Frame<B>);
+impl LivePricePar {
+    pub fn new() -> Self {
+        Self {
+
+        }
+    }
+
+    pub fn update(&mut self) {
+
+    }
+}
+
+impl Renderable for LivePricePar {
+    fn render<B: Backend>(&self, frame: &mut Frame<B>, area: Rect) {
+        todo!()
+    }
+}
+
+struct CommandsPar;
+
+impl CommandsPar {
+    fn new() -> Self {
+        Self
+    }
+}
+
+impl Renderable for CommandsPar {
+    fn render<B: Backend>(&self, frame: &mut Frame<B>, area: Rect) {
+        // TODO maybe add custom owned struct instead of creating a new one
+        let content = vec![Spans::from(vec![
+            Span::styled("ESC", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(" - exit the input mode"),
+        ])];
+
+        let paragraph = Paragraph::new(content)
+            .block(Block::default().borders(Borders::all()).title("Commands"))
+            .alignment(Alignment::Left)
+            .wrap(Wrap { trim: true });
+
+        frame.render_widget(paragraph, area);
+    }
+}
+
+trait Renderable {
+    fn render<B: Backend>(&self, frame: &mut Frame<B>, area: Rect);
 }
 
 //// Draws the UI and holds all data used for drawing.

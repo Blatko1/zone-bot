@@ -1,18 +1,18 @@
-mod input;
 mod console;
+mod input;
 mod save;
-mod zone;
 mod tracker;
 mod ui;
+mod zone;
 
 use binance::api::Binance;
 use binance::market::Market;
+use console::Console;
 use crossterm::{
     event::{self, Event},
     execute,
     terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use console::Console;
 use std::{
     io,
     time::{Duration, Instant},

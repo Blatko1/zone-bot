@@ -14,11 +14,15 @@ use tui::{
     Frame, Terminal,
 };
 
-use crate::{input::{InputHandler, Interruption}, tracker::MarketTracker};
+use crate::{
+    input::{InputHandler, Interruption},
+    tracker::MarketTracker,
+    ui::UI,
+};
 
 pub struct Console<B: Backend> {
     terminal: Terminal<B>,
-    ui: UI<B>,
+    ui: UI,
     tracker: MarketTracker,
 
     input: InputHandler,
@@ -31,7 +35,7 @@ impl<B: Backend> Console<B> {
     pub fn new(terminal: Terminal<B>) -> Self {
         Self {
             terminal,
-            ui: UI::new(),
+            ui: UI::init(),
             tracker: MarketTracker::new(),
 
             input: InputHandler::new(),
@@ -71,7 +75,7 @@ impl<B: Backend> Console<B> {
     pub fn render_ui(&mut self) -> io::Result<CompletedFrame> {
         let size = self.terminal.size().unwrap();
 
-        self.terminal.draw(|f| self.ui.draw(f, size))
+        self.terminal.draw(|f| self.ui.render(f, size))
     }
 }
 

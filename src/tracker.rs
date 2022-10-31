@@ -1,9 +1,7 @@
-pub struct MarketTracker {
-
-}
+pub struct MarketTracker {}
 
 impl MarketTracker {
     pub fn new() -> Self {
-        Self {  }
+        Self {}
     }
 }
