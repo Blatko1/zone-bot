@@ -1,23 +1,22 @@
+mod alert;
+mod bot;
 mod console;
 mod input;
 mod save;
-mod bot;
-mod ui;
 mod strategy;
-mod alert;
+mod ui;
 
+use bot::MarketBot;
 use console::Console;
 use crossterm::{
     event::{self, Event},
     execute,
     terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use strategy::Strategy;
 use std::{
     io,
     time::{Duration, Instant},
 };
-use bot::MarketBot;
 use tui::{
     backend::{self, Backend},
     Terminal,
@@ -26,9 +25,9 @@ use tui::{
 use crate::console::InputMode;
 
 const DEFAULT_SYMBOL: &str = "ETHUSDT";
-const TICK_INTERVAL: Duration = Duration::from_millis(1500);
+const TICK_INTERVAL: Duration = Duration::from_millis(2000);
 
-fn main_loop<B: Backend>(mut console: Console<B>, bot: MarketBot<dyn Strategy>) {
+fn main_loop<B: Backend>(mut console: Console<B>, mut bot: MarketBot) {
     let mut last = Instant::now();
     loop {
         match console.render_ui() {
@@ -37,9 +36,8 @@ fn main_loop<B: Backend>(mut console: Console<B>, bot: MarketBot<dyn Strategy>) 
         };
 
         let elapsed = last.elapsed();
-        let timeout = TICK_INTERVAL
-            .checked_sub(elapsed)
-            .unwrap_or(Duration::ZERO);
+        let timeout =
+            TICK_INTERVAL.checked_sub(elapsed).unwrap_or(Duration::ZERO);
 
         match poll_events(timeout) {
             Ok(Some(event)) => {
@@ -62,7 +60,7 @@ fn main_loop<B: Backend>(mut console: Console<B>, bot: MarketBot<dyn Strategy>) 
 
         // One tick happens every second. 1 tick == 1 second
         if elapsed >= TICK_INTERVAL {
-            println!("{}", elapsed.as_millis());
+            //println!("{}", elapsed.as_millis());
             last = Instant::now();
 
             // Tick the bot. Every tick update the live price
@@ -102,7 +100,7 @@ fn main() {
     // Market Zones
     let zones = data.data();
 
-    // Terminal
+    // Stdout
     // TODO remove the unwraps and add the "?"
     terminal::enable_raw_mode().unwrap();
     let mut stdout = io::stdout();

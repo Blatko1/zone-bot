@@ -7,18 +7,22 @@ use tui::{
     Frame,
 };
 
+use crate::alert::Alert;
+
 pub struct UI {
     commands: CommandsPar,
+    zone_list: ZoneList,
     live_price: LivePricePar,
-    alerts: AlertList
+    alerts: AlertList,
 }
 
 impl UI {
     pub fn init() -> Self {
         Self {
             commands: CommandsPar::default(),
+            zone_list: ZoneList::default(),
             live_price: LivePricePar::default(),
-            alerts: AlertList::default()
+            alerts: AlertList::default(),
         }
     }
 
@@ -52,6 +56,7 @@ impl UI {
             .split(left_right[0]);
 
         self.commands.render(frame, left_widgets[0]);
+        self.zone_list.render(frame, left_widgets[1]);
 
         let right_widgets = Layout::default()
             .direction(Direction::Vertical)
@@ -67,8 +72,20 @@ impl UI {
 }
 
 #[derive(Debug, Default)]
+struct ZoneList {
+
+}
+
+impl Renderable for ZoneList {
+    fn render<B: Backend>(&self, frame: &mut Frame<B>, area: Rect) {
+        let block = Block::default().borders(Borders::all()).title("Zone List");
+        frame.render_widget(block, area);
+    }
+}
+
+#[derive(Debug, Default)]
 struct AlertList {
-    alerts: Vec<A>
+    alerts: Vec<Alert>,
 }
 
 impl Renderable for AlertList {
@@ -76,8 +93,9 @@ impl Renderable for AlertList {
         let text = vec![];
 
         let paragraph = Paragraph::new(text)
-            .block(Block::default().borders(Borders::all()).title("Alerts")).alignment(Alignment::Left);
-        frame.render_widget(paragraph, area);    
+            .block(Block::default().borders(Borders::all()).title("Alerts"))
+            .alignment(Alignment::Left);
+        frame.render_widget(paragraph, area);
     }
 }
 

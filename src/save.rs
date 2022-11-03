@@ -1,6 +1,9 @@
 use std::{fs, io};
 
-use crate::bot::{Zone, PriceLevel, Priority};
+use crate::{
+    bot::PriceLevel,
+    strategy::{Zone, ZonePriority},
+};
 
 const SAVE: &str = "bot_data.json";
 
@@ -56,12 +59,12 @@ enum PriorityData {
     Low = 3,
 }
 
-impl From<PriorityData> for Priority {
+impl From<PriorityData> for ZonePriority {
     fn from(data: PriorityData) -> Self {
         match data {
-            PriorityData::High => Priority::High,
-            PriorityData::Medium => Priority::Medium,
-            PriorityData::Low => Priority::Low,
+            PriorityData::High => ZonePriority::High,
+            PriorityData::Medium => ZonePriority::Medium,
+            PriorityData::Low => ZonePriority::Low,
         }
     }
 }
