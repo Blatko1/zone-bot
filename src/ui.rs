@@ -7,8 +7,6 @@ use tui::{
     Frame,
 };
 
-use crate::bot::Alert;
-
 pub struct UI {
     commands: CommandsPar,
     live_price: LivePricePar,
@@ -70,7 +68,7 @@ impl UI {
 
 #[derive(Debug, Default)]
 struct AlertList {
-    alerts: Vec<Alert>
+    alerts: Vec<A>
 }
 
 impl Renderable for AlertList {

@@ -3,6 +3,8 @@ mod input;
 mod save;
 mod bot;
 mod ui;
+mod strategy;
+mod alert;
 
 use console::Console;
 use crossterm::{
@@ -10,6 +12,7 @@ use crossterm::{
     execute,
     terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use strategy::Strategy;
 use std::{
     io,
     time::{Duration, Instant},
@@ -25,7 +28,7 @@ use crate::console::InputMode;
 const DEFAULT_SYMBOL: &str = "ETHUSDT";
 const TICK_INTERVAL: Duration = Duration::from_millis(1500);
 
-fn main_loop<B: Backend>(mut console: Console<B>, bot: MarketBot) {
+fn main_loop<B: Backend>(mut console: Console<B>, bot: MarketBot<dyn Strategy>) {
     let mut last = Instant::now();
     loop {
         match console.render_ui() {
