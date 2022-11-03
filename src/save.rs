@@ -1,6 +1,6 @@
 use std::{fs, io};
 
-use crate::zone::{PriceLevel, Priority, Zone, ZoneManager};
+use crate::bot::{Zone, PriceLevel, Priority};
 
 const SAVE: &str = "bot_data.json";
 
@@ -14,12 +14,12 @@ impl SaveData {
         Self { zones: Vec::new() }
     }
 
-    pub fn get_data(self) -> ZoneManager {
+    pub fn data(self) -> Vec<Zone> {
         let mut zones = Vec::with_capacity(self.zones.len());
         for z in self.zones {
             zones.push(z.into());
         }
-        ZoneManager::from_zones(zones)
+        zones
     }
 }
 

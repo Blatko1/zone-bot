@@ -7,16 +7,20 @@ use tui::{
     Frame,
 };
 
+use crate::bot::Alert;
+
 pub struct UI {
     commands: CommandsPar,
     live_price: LivePricePar,
+    alerts: AlertList
 }
 
 impl UI {
     pub fn init() -> Self {
         Self {
             commands: CommandsPar::default(),
-            live_price: LivePricePar::default()
+            live_price: LivePricePar::default(),
+            alerts: AlertList::default()
         }
     }
 
@@ -25,14 +29,57 @@ impl UI {
         frame: &mut Frame<B>,
         terminal_area: Rect,
     ) {
-        let chunks = Layout::default()
+        let top_bottom = Layout::default()
             .margin(1)
             .direction(Direction::Vertical)
             .constraints([Constraint::Min(10), Constraint::Length(3)])
             .split(terminal_area);
 
-        self.commands.render(frame, chunks[0]);
-        self.live_price.render(frame, chunks[1]);
+        self.live_price.render(frame, top_bottom[1]);
+
+        let left_right = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Percentage(30),
+                Constraint::Percentage(70),
+            ])
+            .split(top_bottom[0]);
+
+        let left_widgets = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(CommandsPar::HEIGHT),
+                Constraint::Min(4),
+            ])
+            .split(left_right[0]);
+
+        self.commands.render(frame, left_widgets[0]);
+
+        let right_widgets = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(10),
+                Constraint::Min(5),
+                Constraint::Length(6),
+            ])
+            .split(left_right[1]);
+
+        self.alerts.render(frame, right_widgets[0]);
+    }
+}
+
+#[derive(Debug, Default)]
+struct AlertList {
+    alerts: Vec<Alert>
+}
+
+impl Renderable for AlertList {
+    fn render<B: Backend>(&self, frame: &mut Frame<B>, area: Rect) {
+        let text = vec![];
+
+        let paragraph = Paragraph::new(text)
+            .block(Block::default().borders(Borders::all()).title("Alerts")).alignment(Alignment::Left);
+        frame.render_widget(paragraph, area);    
     }
 }
 
@@ -52,13 +99,17 @@ impl LivePricePar {
 impl Renderable for LivePricePar {
     fn render<B: Backend>(&self, frame: &mut Frame<B>, area: Rect) {
         let text = vec![Spans::from(vec![
-            Span::styled(&self.symbol, Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw(": "), Span::raw(&self.price)
+            Span::styled(
+                &self.symbol,
+                Style::default().add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(": "),
+            Span::raw(&self.price),
         ])];
 
         let paragraph = Paragraph::new(text)
-        .block(Block::default().borders(Borders::all()).title("Live Price"))
-        .alignment(Alignment::Center);
+            .block(Block::default().borders(Borders::all()).title("Live Price"))
+            .alignment(Alignment::Center);
 
         frame.render_widget(paragraph, area);
     }
@@ -76,13 +127,37 @@ impl Default for LivePricePar {
 #[derive(Debug, Default)]
 struct CommandsPar;
 
+impl CommandsPar {
+    const HEIGHT: u16 = 6;
+}
+
 impl Renderable for CommandsPar {
     fn render<B: Backend>(&self, frame: &mut Frame<B>, area: Rect) {
         // TODO maybe add custom owned struct instead of creating a new one
-        let text = vec![Spans::from(vec![
-            Span::styled("ESC", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw(" - exit the input mode"),
-        ])];
+        // BOLD IS NOT VISIBLE
+        let text = vec![
+            Spans::from(vec![
+                Span::styled(
+                    "ESC",
+                    Style::default().add_modifier(Modifier::RAPID_BLINK),
+                ),
+                Span::raw(" - exit the input mode"),
+            ]),
+            Spans::from(vec![
+                Span::styled(
+                    "ENTER",
+                    Style::default().add_modifier(Modifier::SLOW_BLINK),
+                ),
+                Span::raw(" - confirm the input"),
+            ]),
+            Spans::from(vec![
+                Span::styled(
+                    "CTRL + N",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ),
+                Span::raw(" - add a new zone"),
+            ]),
+        ];
 
         let paragraph = Paragraph::new(text)
             .block(Block::default().borders(Borders::all()).title("Commands"))

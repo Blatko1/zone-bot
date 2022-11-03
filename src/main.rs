@@ -1,9 +1,8 @@
 mod console;
 mod input;
 mod save;
-mod tracker;
+mod bot;
 mod ui;
-mod zone;
 
 use console::Console;
 use crossterm::{
@@ -15,21 +14,18 @@ use std::{
     io,
     time::{Duration, Instant},
 };
-use tracker::MarketTracker;
+use bot::MarketBot;
 use tui::{
     backend::{self, Backend},
     Terminal,
 };
-use zone::ZoneManager;
 
 use crate::console::InputMode;
 
 const DEFAULT_SYMBOL: &str = "ETHUSDT";
-// In milliseconds:
-const EVENT_INTERVAL: u64 = 2 * 1000;
-const EVENT_DURATION: Duration = Duration::from_millis(EVENT_INTERVAL);
+const TICK_INTERVAL: Duration = Duration::from_millis(1500);
 
-fn main_loop<B: Backend>(mut console: Console<B>, zones: ZoneManager) {
+fn main_loop<B: Backend>(mut console: Console<B>, bot: MarketBot) {
     let mut last = Instant::now();
     loop {
         match console.render_ui() {
@@ -38,16 +34,16 @@ fn main_loop<B: Backend>(mut console: Console<B>, zones: ZoneManager) {
         };
 
         let elapsed = last.elapsed();
-        let timeout = EVENT_DURATION
+        let timeout = TICK_INTERVAL
             .checked_sub(elapsed)
             .unwrap_or(Duration::ZERO);
 
         match poll_events(timeout) {
             Ok(Some(event)) => {
                 match event {
-                    event::Event::FocusGained => (),
-                    event::Event::FocusLost => (),
-                    event::Event::Key(event) => match console.input_mode() {
+                    Event::FocusGained => (),
+                    Event::FocusLost => (),
+                    Event::Key(event) => match console.input_mode() {
                         InputMode::Editing => console.process_editing(event),
                         InputMode::Control => console.process_controls(event),
                     },
@@ -61,9 +57,14 @@ fn main_loop<B: Backend>(mut console: Console<B>, zones: ZoneManager) {
             Err(e) => panic!("Terminal Event Error: {e}"),
         }
 
-        // Check the market price
-        if elapsed >= EVENT_DURATION {
+        // One tick happens every second. 1 tick == 1 second
+        if elapsed >= TICK_INTERVAL {
+            println!("{}", elapsed.as_millis());
             last = Instant::now();
+
+            // Tick the bot. Every tick update the live price
+            // and every 5 ticks bot analyzes the price.
+            bot.tick();
         }
     }
 }
@@ -74,7 +75,7 @@ fn poll_events(interval: Duration) -> crossterm::Result<Option<event::Event>> {
         match event {
             Event::FocusGained => return Ok(Some(event)),
             Event::FocusLost => return Ok(Some(event)),
-            Event::Key(_) => return Ok(Some(event)),
+            Event::Key(..) => return Ok(Some(event)),
             _ => (),
         }
     }
@@ -96,7 +97,7 @@ fn main() {
         },
     };
     // Market Zones
-    let zones = data.get_data();
+    let zones = data.data();
 
     // Terminal
     // TODO remove the unwraps and add the "?"
@@ -110,9 +111,9 @@ fn main() {
     let console = Console::new(terminal);
 
     // Market
-    let tracker = MarketTracker::new(DEFAULT_SYMBOL);
+    let bot = MarketBot::new(DEFAULT_SYMBOL, zones);
 
-    main_loop(console, zones);
+    main_loop(console, bot);
 
     terminal::disable_raw_mode().unwrap();
     execute!(io::stdout(), LeaveAlternateScreen).unwrap();
