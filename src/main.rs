@@ -26,6 +26,7 @@ use crate::console::InputMode;
 
 const DEFAULT_SYMBOL: &str = "ETHUSDT";
 const TICK_INTERVAL: Duration = Duration::from_millis(2000);
+const RESIZE_BATCH_WAIT_DURATION: Duration = Duration::from_millis(100);
 
 fn main_loop<B: Backend>(mut console: Console<B>, mut bot: MarketBot) {
     let mut last = Instant::now();
@@ -47,6 +48,10 @@ fn main_loop<B: Backend>(mut console: Console<B>, mut bot: MarketBot) {
                     Event::Key(event) => match console.input_mode() {
                         InputMode::Editing => console.process_editing(event),
                         InputMode::Control => console.process_controls(event),
+                    },
+                    Event::Resize(..) => {
+                        process_resize_batch();
+                        console.resize()
                     },
                     _ => unreachable!(),
                 }
@@ -77,10 +82,23 @@ fn poll_events(interval: Duration) -> crossterm::Result<Option<event::Event>> {
             Event::FocusGained => return Ok(Some(event)),
             Event::FocusLost => return Ok(Some(event)),
             Event::Key(..) => return Ok(Some(event)),
+            Event::Resize(..) => return Ok(Some(event)),
             _ => (),
         }
     }
     Ok(None)
+}
+
+/// When the user resizes the terminal, resize events come in batches meaning 
+/// events returned while resizing the window aren't as important as the last 
+/// resize event giving us the final terminal dimensions.
+fn process_resize_batch() {
+    while let Ok(true) = event::poll(RESIZE_BATCH_WAIT_DURATION) {
+        match event::read().unwrap() {
+            Event::Resize(..) => (),
+            _ => break
+        }
+    }
 }
 
 fn main() {

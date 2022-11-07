@@ -7,100 +7,138 @@ use tui::{
     Frame,
 };
 
-use crate::alert::Alert;
+use crate::{alert::Alert, bot::MarketBot};
 
 pub struct UI {
+    // Static objects
     commands: CommandsPar,
-    zone_list: ZoneList,
+
+    // Dynamic objects
     live_price: LivePricePar,
     alerts: AlertList,
+    zone_list: ZoneList,
 }
 
 impl UI {
     pub fn init() -> Self {
         Self {
-            commands: CommandsPar::default(),
-            zone_list: ZoneList::default(),
-            live_price: LivePricePar::default(),
-            alerts: AlertList::default(),
+            commands: CommandsPar::new(),
+            live_price: LivePricePar::new(),
+            alerts: AlertList::new(),
+            zone_list: ZoneList::new(),
         }
+    }
+
+    /// Updates the UI objects with 
+    pub fn update(&mut self) {}
+
+    /// Updates layout and positions of the UI objects.
+    pub fn update_layout(&mut self, terminal_area: Rect) {
+        UILayout::top_bottom_layout(self, terminal_area);
     }
 
     pub fn render<B: Backend>(
         &self,
-        frame: &mut Frame<B>,
-        terminal_area: Rect,
+        frame: &mut Frame<B>
     ) {
-        let top_bottom = Layout::default()
-            .margin(1)
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Min(10), Constraint::Length(3)])
-            .split(terminal_area);
-
-        self.live_price.render(frame, top_bottom[1]);
-
-        let left_right = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Percentage(30),
-                Constraint::Percentage(70),
-            ])
-            .split(top_bottom[0]);
-
-        let left_widgets = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Length(CommandsPar::HEIGHT),
-                Constraint::Min(4),
-            ])
-            .split(left_right[0]);
-
-        self.commands.render(frame, left_widgets[0]);
-        self.zone_list.render(frame, left_widgets[1]);
-
-        let right_widgets = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Length(10),
-                Constraint::Min(5),
-                Constraint::Length(6),
-            ])
-            .split(left_right[1]);
-
-        self.alerts.render(frame, right_widgets[0]);
+        self.commands.render(frame);
+        self.live_price.render(frame);
+        self.alerts.render(frame);
+        self.zone_list.render(frame);
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct ZoneList {
-
+    area: Rect,
+    visible: bool
 }
 
-impl Renderable for ZoneList {
-    fn render<B: Backend>(&self, frame: &mut Frame<B>, area: Rect) {
+impl ZoneList {
+    fn new() -> Self {
+        Self {
+            area: Rect::default(),
+            visible: true,
+        }
+    }
+}
+
+impl StaticObject for ZoneList {
+    fn render<B: Backend>(&self, frame: &mut Frame<B>) {
         let block = Block::default().borders(Borders::all()).title("Zone List");
-        frame.render_widget(block, area);
+        frame.render_widget(block, self.area);
+    }
+
+    fn position_area(&mut self, terminal_size: Rect) {
+        self.area = terminal_size;
+    }
+
+    fn set_visibility(&mut self, visible: bool) {
+        self.visible = visible;
+    }  
+
+    fn is_visible(&self) -> bool {
+        self.visible
+    }  
+}
+
+impl DynamicObject<&MarketBot> for ZoneList {
+    fn update(&mut self, bot: &MarketBot) {
+        todo!()
     }
 }
 
 #[derive(Debug, Default)]
 struct AlertList {
+    area: Rect,
+    visible: bool,
     alerts: Vec<Alert>,
 }
 
-impl Renderable for AlertList {
-    fn render<B: Backend>(&self, frame: &mut Frame<B>, area: Rect) {
+impl AlertList {
+    fn new() -> Self {
+        Self {
+            area: Rect::default(),
+            visible: true,
+            alerts: Vec::new(),
+        }
+    }
+}
+
+impl StaticObject for AlertList {
+    fn render<B: Backend>(&self, frame: &mut Frame<B>) {
         let text = vec![];
 
         let paragraph = Paragraph::new(text)
             .block(Block::default().borders(Borders::all()).title("Alerts"))
             .alignment(Alignment::Left);
-        frame.render_widget(paragraph, area);
+        frame.render_widget(paragraph, self.area);
+    }
+
+    fn position_area(&mut self, terminal_size: Rect) {
+        self.area = terminal_size;
+    }
+
+    fn set_visibility(&mut self, visible: bool) {
+        self.visible = visible;
+    }  
+
+    fn is_visible(&self) -> bool {
+        self.visible
+    }  
+}
+
+impl DynamicObject<&MarketBot> for AlertList {
+    fn update(&mut self, data: &MarketBot) {
+        todo!()
     }
 }
 
 #[derive(Debug)]
 struct LivePricePar {
+    area: Rect,
+    visible: bool,
+
     symbol: String,
     price: String,
     // TODO volume:
@@ -109,11 +147,18 @@ struct LivePricePar {
 }
 
 impl LivePricePar {
-    pub fn update(&mut self) {}
+    fn new() -> Self {
+        Self {
+            area: Rect::default(),
+            visible: true,
+            symbol: String::from("{Symbol}"),
+            price: String::from("{Price}"),
+        }
+    }
 }
 
-impl Renderable for LivePricePar {
-    fn render<B: Backend>(&self, frame: &mut Frame<B>, area: Rect) {
+impl StaticObject for LivePricePar {
+    fn render<B: Backend>(&self, frame: &mut Frame<B>) {
         let text = vec![Spans::from(vec![
             Span::styled(
                 &self.symbol,
@@ -127,28 +172,47 @@ impl Renderable for LivePricePar {
             .block(Block::default().borders(Borders::all()).title("Live Price"))
             .alignment(Alignment::Center);
 
-        frame.render_widget(paragraph, area);
+        frame.render_widget(paragraph, self.area);
+    }
+
+    fn position_area(&mut self, terminal_size: Rect) {
+        self.area = terminal_size;
+    }
+
+    fn set_visibility(&mut self, visible: bool) {
+        self.visible = visible;
+    }  
+
+    fn is_visible(&self) -> bool {
+        self.visible
+    } 
+}
+
+impl DynamicObject<&MarketBot> for LivePricePar {
+    fn update(&mut self, data: &MarketBot) {
+        todo!()
     }
 }
 
-impl Default for LivePricePar {
-    fn default() -> Self {
+#[derive(Debug)]
+struct CommandsPar {
+    area: Rect,
+    visible: bool
+}
+
+impl CommandsPar {
+    const HEIGHT: u16 = 6;
+
+    fn new() -> Self {
         Self {
-            symbol: String::from("{SYMBOL}"),
-            price: String::from("{PRICE}"),
+            area: Rect::default(),
+            visible: true
         }
     }
 }
 
-#[derive(Debug, Default)]
-struct CommandsPar;
-
-impl CommandsPar {
-    const HEIGHT: u16 = 6;
-}
-
-impl Renderable for CommandsPar {
-    fn render<B: Backend>(&self, frame: &mut Frame<B>, area: Rect) {
+impl StaticObject for CommandsPar {
+    fn render<B: Backend>(&self, frame: &mut Frame<B>) {
         // TODO maybe add custom owned struct instead of creating a new one
         // BOLD IS NOT VISIBLE
         let text = vec![
@@ -180,12 +244,98 @@ impl Renderable for CommandsPar {
             .alignment(Alignment::Left)
             .wrap(Wrap { trim: true });
 
-        frame.render_widget(paragraph, area);
+        frame.render_widget(paragraph, self.area);
     }
+
+    fn position_area(&mut self, terminal_size: Rect) {
+        self.area = terminal_size;
+    }
+
+    fn set_visibility(&mut self, visible: bool) {
+        self.visible = visible;
+    }  
+
+    fn is_visible(&self) -> bool {
+        self.visible
+    }  
 }
 
-trait Renderable {
-    fn render<B: Backend>(&self, frame: &mut Frame<B>, area: Rect);
+/// Every UI dynamic object which has constantly changing
+/// data should implement [`DynamicObject`] trait.
+trait DynamicObject<D>: StaticObject {
+    fn update(&mut self, data: D);
+}
+
+// TODO
+/// Every UI object should implement [`StaticObject`] trait
+/// because it gives all the basic UI functions.
+trait StaticObject {
+    /// Every object has it's own position on the UI which is specified
+    /// by this function. It takes the terminal dimensions as an argument
+    /// and updated the object with the most suitable position area.
+    /// Every time the terminal resizes this function should be called
+    /// to update the object's position.
+    fn position_area(&mut self, new_area: Rect);
+
+    /// Renders the object to the provided [`Frame`] or in other words UI.
+    fn render<B: Backend>(&self, frame: &mut Frame<B>);
+
+    fn set_visibility(&mut self, visible: bool);
+
+    fn is_visible(&self) -> bool;
+}
+
+struct UILayout;
+
+impl UILayout {
+    pub fn top_bottom_layout(ui: &mut UI, terminal_area: Rect) {
+        // Splits the terminal into the top area and bottom object
+        let top_area_bottom_object = Layout::default()
+            .margin(1)
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Min(10), Constraint::Length(3)])
+            .split(terminal_area);
+
+        ui.live_price.position_area(top_area_bottom_object[1]);
+
+        {
+            let left_right_areas = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([
+                    Constraint::Percentage(30),
+                    Constraint::Percentage(70),
+                ])
+                .split(top_area_bottom_object[0]);
+
+            // Command help box, Zone list/input box
+            {
+                let left_objects = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([
+                        Constraint::Length(CommandsPar::HEIGHT),
+                        Constraint::Min(4),
+                    ])
+                    .split(left_right_areas[0]);
+
+                ui.commands.position_area(left_objects[0]);
+                ui.zone_list.position_area(left_objects[1]);
+            }
+
+            // Alert list, Active Zones, Volume chart
+            {
+                let right_objects = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([
+                        Constraint::Length(10),
+                        Constraint::Min(5),
+                        Constraint::Length(6),
+                    ])
+                    .split(left_right_areas[1]);
+
+                ui.alerts.position_area(right_objects[0]);
+            }
+        }
+    }
 }
 
 //// Draws the UI and holds all data used for drawing.

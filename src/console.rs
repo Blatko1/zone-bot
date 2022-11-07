@@ -50,18 +50,21 @@ impl<B: Backend> Console<B> {
         }
     }
 
+    pub fn render_ui(&mut self) -> io::Result<CompletedFrame> {
+        self.terminal.draw(|f| self.ui.render(f))
+    }
+
+    pub fn resize(&mut self) {
+        let size = self.terminal.size().unwrap();
+        self.ui.update_layout(size);
+    }
+
     pub fn input_mode(&self) -> InputMode {
         self.input_mode
     }
 
     pub fn should_exit(&self) -> bool {
         self.exit
-    }
-
-    pub fn render_ui(&mut self) -> io::Result<CompletedFrame> {
-        let size = self.terminal.size().unwrap();
-
-        self.terminal.draw(|f| self.ui.render(f, size))
     }
 }
 

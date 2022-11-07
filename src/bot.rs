@@ -6,21 +6,24 @@ use std::{
     thread,
 };
 
-use binance::{api::Binance, market::Market, model::SymbolPrice};
+use binance::{
+    api::Binance, errors::Result as BinanceResult, market::Market,
+    model::SymbolPrice,
+};
 
 use crate::{
     alert::Alert,
-    strategy::{Strategy, Zone, ZoneStrat},
+    strategy::{Zone, ZoneStrat},
 };
 
 pub struct MarketBot {
     market: Arc<Market>,
     symbol: String,
-    price_receiver: Receiver<binance::errors::Result<SymbolPrice>>,
+    price_reader: Receiver<BinanceResult<SymbolPrice>>,
     live_price: PriceLevel,
 
+    zone: ZoneStrat,
     latest_alert: Option<Alert>,
-    strategies: Vec<Box<dyn Strategy>>,
 
     tick: u16,
 }
@@ -29,17 +32,17 @@ pub struct MarketBot {
 impl MarketBot {
     const UPDATE_TICKS: u16 = 5;
 
-    pub fn new<S: Into<String>>(symbol: S, zones: Vec<Zone>) -> Self {
+    pub fn new<I: Into<String>>(symbol: I, zones: Vec<Zone>) -> Self {
         let symbol = symbol.into();
         let market = Arc::new(Market::new(None, None));
-        let price_receiver = spawn_price_reader(market.clone(), symbol.clone());
+        let price_reader = spawn_price_reader(market.clone(), symbol.clone());
         Self {
             market: market,
             symbol,
-            price_receiver,
-            latest_alert: None,
+            price_reader,
 
-            strategies: vec![Box::new(ZoneStrat::from_zones(zones))],
+            zone: ZoneStrat::from_zones(zones),
+            latest_alert: None,
 
             live_price: PriceLevel::ZERO,
             tick: 0,
@@ -49,7 +52,7 @@ impl MarketBot {
     pub fn analyze(&mut self) {}
 
     pub fn tick(&mut self) {
-        if let Some(price) = self.price_receiver.try_iter().last() {
+        if let Some(price) = self.price_reader.try_iter().last() {
             self.live_price = PriceLevel(price.unwrap().price);
         };
 
@@ -77,7 +80,7 @@ impl PriceLevel {
 fn spawn_price_reader(
     market: Arc<Market>,
     symbol: String,
-) -> Receiver<binance::errors::Result<SymbolPrice>> {
+) -> Receiver<BinanceResult<SymbolPrice>> {
     let (tx, rx) = channel();
     thread::spawn(move || loop {
         let price = market.get_price(&symbol);
