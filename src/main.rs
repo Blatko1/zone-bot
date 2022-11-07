@@ -6,7 +6,7 @@ mod save;
 mod strategy;
 mod ui;
 
-use bot::{MarketBot};
+use bot::MarketBot;
 use console::Console;
 use crossterm::{
     event::{self, Event},
@@ -28,39 +28,37 @@ const DEFAULT_SYMBOL: &str = "ETHUSDT";
 const TICK_INTERVAL: Duration = Duration::from_millis(2000);
 const RESIZE_BATCH_WAIT_DURATION: Duration = Duration::from_millis(100);
 
-fn run<B: Backend>(mut console: Console<B>, mut bot: MarketBot) {
+fn run<B: Backend>(
+    mut console: Console<B>,
+    mut bot: MarketBot,
+) -> Result<(), io::Error> {
     let mut last = Instant::now();
+
     loop {
-        match console.render_ui() {
-            Ok(_) => (),
-            Err(err) => panic!("Terminal Render Error: {err}"),
-        };
+        console.render_ui()?;
 
         let elapsed = last.elapsed();
         let timeout =
             TICK_INTERVAL.checked_sub(elapsed).unwrap_or(Duration::ZERO);
 
-        match poll_events(timeout) {
-            Ok(Some(event)) => {
-                match event {
-                    Event::FocusGained => (),
-                    Event::FocusLost => (),
-                    Event::Key(event) => match console.input_mode() {
-                        InputMode::Editing => console.process_editing(event),
-                        InputMode::Control => console.process_controls(event),
-                    },
-                    Event::Resize(..) => {
-                        process_resize_batch();
-                        console.resize()
-                    }
-                    _ => unreachable!(),
+        if event::poll(timeout)? {
+            match event::read()? {
+                Event::FocusGained => (),
+                Event::FocusLost => (),
+                Event::Key(key) => match console.input_mode() {
+                    InputMode::Editing => console.process_editing(key),
+                    InputMode::Control => console.process_controls(key),
+                },
+                Event::Resize(..) => {
+                    process_resize_batch()?;
+                    console.resize();
                 }
-                if console.should_exit() {
-                    break;
-                }
+                _ => (),
             }
-            Ok(None) => (),
-            Err(e) => panic!("Terminal Event Error: {e}"),
+
+            if console.should_exit() {
+                break;
+            }
         }
 
         // One tick happens every second. 1 tick == 1 second
@@ -76,32 +74,21 @@ fn run<B: Backend>(mut console: Console<B>, mut bot: MarketBot) {
             console.update_ui(&bot);
         }
     }
-}
 
-fn poll_events(interval: Duration) -> crossterm::Result<Option<event::Event>> {
-    if event::poll(interval)? {
-        let event = event::read()?;
-        match event {
-            Event::FocusGained => return Ok(Some(event)),
-            Event::FocusLost => return Ok(Some(event)),
-            Event::Key(..) => return Ok(Some(event)),
-            Event::Resize(..) => return Ok(Some(event)),
-            _ => (),
-        }
-    }
-    Ok(None)
+    Ok(())
 }
 
 /// When the user resizes the terminal, resize events come in batches meaning
 /// events returned while resizing the window aren't as important as the last
 /// resize event giving us the final terminal dimensions.
-fn process_resize_batch() {
+fn process_resize_batch() -> Result<(), io::Error> {
     while let Ok(true) = event::poll(RESIZE_BATCH_WAIT_DURATION) {
-        match event::read().unwrap() {
+        match event::read()? {
             Event::Resize(..) => (),
             _ => break,
         }
     }
+    Ok(())
 }
 
 fn main() {
@@ -135,7 +122,10 @@ fn main() {
     // Market
     let bot = MarketBot::new(DEFAULT_SYMBOL, zones);
 
-    run(console, bot);
+    match run(console, bot) {
+        Ok(_) => (),
+        Err(err) => panic!("IO Error: {err}"),
+    };
 
     terminal::disable_raw_mode().unwrap();
     execute!(io::stdout(), LeaveAlternateScreen).unwrap();
