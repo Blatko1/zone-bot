@@ -10,8 +10,8 @@ impl ZoneStrat {
     pub fn from_zones(zones: Vec<Zone>) -> Self {
         Self {
             zones,
-            closest_bottom: PriceLevel::ZERO,
-            closest_upper: PriceLevel::ZERO,
+            closest_bottom: PriceLevel::NAN,
+            closest_upper: PriceLevel::NAN,
         }
     }
 }

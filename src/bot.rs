@@ -18,9 +18,9 @@ use crate::{
 
 pub struct MarketBot {
     market: Arc<Market>,
+    // TODO put Symbol struct instead
     symbol: String,
-    price_reader: Receiver<BinanceResult<SymbolPrice>>,
-    live_price: PriceLevel,
+    price_tracker: PriceTracker,
 
     zone: ZoneStrat,
     latest_alert: Option<Alert>,
@@ -32,19 +32,18 @@ pub struct MarketBot {
 impl MarketBot {
     const UPDATE_TICKS: u16 = 5;
 
-    pub fn new<I: Into<String>>(symbol: I, zones: Vec<Zone>) -> Self {
+    pub fn new<S: Into<String>>(symbol: S, zones: Vec<Zone>) -> Self {
         let symbol = symbol.into();
         let market = Arc::new(Market::new(None, None));
-        let price_reader = spawn_price_reader(market.clone(), symbol.clone());
+        let price_tracker = PriceTracker::new(market.clone(), symbol.clone());
         Self {
             market: market,
             symbol,
-            price_reader,
+            price_tracker,
 
             zone: ZoneStrat::from_zones(zones),
             latest_alert: None,
 
-            live_price: PriceLevel::ZERO,
             tick: 0,
         }
     }
@@ -52,10 +51,7 @@ impl MarketBot {
     pub fn analyze(&mut self) {}
 
     pub fn tick(&mut self) {
-        if let Some(price) = self.price_reader.try_iter().last() {
-            self.live_price = PriceLevel(price.unwrap().price);
-        };
-
+        self.price_tracker.track();
         self.tick += 1;
 
         if self.tick >= Self::UPDATE_TICKS {
@@ -63,13 +59,47 @@ impl MarketBot {
             self.tick = 0;
         }
     }
+
+    // TODO maybe do inlining
+    pub fn get_price(&self) -> PriceLevel {
+        self.price_tracker.get_price()
+    }
+}
+
+struct PriceTracker {
+    price: PriceLevel,
+    reader: Receiver<BinanceResult<SymbolPrice>>
+}
+
+impl PriceTracker {
+    fn new(market: Arc<Market>, symbol: String) -> Self {
+        let reader = spawn_price_reader(market, symbol);
+        Self {
+            price: PriceLevel::NAN,
+            reader
+        }
+    }
+
+    fn track(&mut self) {
+        if let Some(price) = self.reader.try_iter().last() {
+            // TODO add Into impl for PriceLevel from SymbolPrice
+            self.price = PriceLevel(price.unwrap().price);
+        }
+    }
+
+    fn get_price(&self) -> PriceLevel {
+        self.price
+    }
 }
 
 #[derive(Debug)]
+struct Symbol(String);
+
+#[derive(Debug, Clone, Copy)]
 pub struct PriceLevel(pub f64);
 
 impl PriceLevel {
-    pub const ZERO: PriceLevel = PriceLevel(0.0);
+    pub const NAN: PriceLevel = PriceLevel(f64::NAN);
 }
 
 /// Reading the price from Binance charts blocks the thread for a short period of time
@@ -86,7 +116,7 @@ fn spawn_price_reader(
         let price = market.get_price(&symbol);
         match tx.send(price) {
             Ok(_) => thread::sleep(crate::TICK_INTERVAL),
-            Err(err) => panic!("Thread Error: {err}"),
+            Err(_) => break,
         }
     });
     rx

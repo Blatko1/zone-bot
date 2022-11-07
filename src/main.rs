@@ -28,7 +28,7 @@ const DEFAULT_SYMBOL: &str = "ETHUSDT";
 const TICK_INTERVAL: Duration = Duration::from_millis(2000);
 const RESIZE_BATCH_WAIT_DURATION: Duration = Duration::from_millis(100);
 
-fn main_loop<B: Backend>(mut console: Console<B>, mut bot: MarketBot) {
+fn run<B: Backend>(mut console: Console<B>, mut bot: MarketBot) {
     let mut last = Instant::now();
     loop {
         match console.render_ui() {
@@ -71,6 +71,9 @@ fn main_loop<B: Backend>(mut console: Console<B>, mut bot: MarketBot) {
             // Tick the bot. Every tick update the live price
             // and every 5 ticks bot analyzes the price.
             bot.tick();
+
+            // Update the UI with fresh market data.
+            console.update_ui(&bot);
         }
     }
 }
@@ -132,7 +135,7 @@ fn main() {
     // Market
     let bot = MarketBot::new(DEFAULT_SYMBOL, zones);
 
-    main_loop(console, bot);
+    run(console, bot);
 
     terminal::disable_raw_mode().unwrap();
     execute!(io::stdout(), LeaveAlternateScreen).unwrap();

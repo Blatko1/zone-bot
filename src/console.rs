@@ -5,7 +5,7 @@ use tui::{backend::Backend, terminal::CompletedFrame, Terminal};
 
 use crate::{
     input::{InputHandler, Interruption},
-    ui::UI,
+    ui::UI, bot::MarketBot,
 };
 
 pub struct Console<B: Backend> {
@@ -34,20 +34,16 @@ impl<B: Backend> Console<B> {
     pub fn process_controls(&mut self, event: KeyEvent) {}
 
     pub fn process_editing(&mut self, event: KeyEvent) {
-        let interruption = match self.input.process_input(event) {
-            Some(intr) => intr,
-            None => {
-                println!("input: {}", self.input);
-                return;
-            }
-        };
-
         if let Some(interruption) = self.input.process_input(event) {
             match interruption {
                 Interruption::Enter(buf) => println!("You entered: {buf}"),
                 Interruption::Esc => self.exit = true,
             }
         }
+    }
+
+    pub fn update_ui(&mut self, data: &MarketBot) {
+        self.ui.update(data);
     }
 
     pub fn render_ui(&mut self) -> io::Result<CompletedFrame> {

@@ -30,7 +30,11 @@ impl UI {
     }
 
     /// Updates the UI objects with 
-    pub fn update(&mut self) {}
+    pub fn update(&mut self, data: &MarketBot) {
+        self.live_price.update(data);
+        self.alerts.update(data);
+        self.zone_list.update(data);
+    }
 
     /// Updates layout and positions of the UI objects.
     pub fn update_layout(&mut self, terminal_area: Rect) {
@@ -82,7 +86,7 @@ impl StaticObject for ZoneList {
     }  
 }
 
-impl DynamicObject<&MarketBot> for ZoneList {
+impl DynamicObject for ZoneList {
     fn update(&mut self, bot: &MarketBot) {
         todo!()
     }
@@ -128,7 +132,7 @@ impl StaticObject for AlertList {
     }  
 }
 
-impl DynamicObject<&MarketBot> for AlertList {
+impl DynamicObject for AlertList {
     fn update(&mut self, data: &MarketBot) {
         todo!()
     }
@@ -188,8 +192,9 @@ impl StaticObject for LivePricePar {
     } 
 }
 
-impl DynamicObject<&MarketBot> for LivePricePar {
+impl DynamicObject for LivePricePar {
     fn update(&mut self, data: &MarketBot) {
+        //self.symbol = data
         todo!()
     }
 }
@@ -262,8 +267,8 @@ impl StaticObject for CommandsPar {
 
 /// Every UI dynamic object which has constantly changing
 /// data should implement [`DynamicObject`] trait.
-trait DynamicObject<D>: StaticObject {
-    fn update(&mut self, data: D);
+trait DynamicObject: StaticObject {
+    fn update(&mut self, data: &MarketBot);
 }
 
 // TODO
