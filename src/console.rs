@@ -4,8 +4,9 @@ use crossterm::event::KeyEvent;
 use tui::{backend::Backend, terminal::CompletedFrame, Terminal};
 
 use crate::{
+    bot::MarketBot,
     input::{InputHandler, Interruption},
-    ui::UI, bot::MarketBot,
+    ui::UI,
 };
 
 pub struct Console<B: Backend> {

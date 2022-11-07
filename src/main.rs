@@ -6,7 +6,7 @@ mod save;
 mod strategy;
 mod ui;
 
-use bot::MarketBot;
+use bot::{MarketBot};
 use console::Console;
 use crossterm::{
     event::{self, Event},
@@ -52,7 +52,7 @@ fn run<B: Backend>(mut console: Console<B>, mut bot: MarketBot) {
                     Event::Resize(..) => {
                         process_resize_batch();
                         console.resize()
-                    },
+                    }
                     _ => unreachable!(),
                 }
                 if console.should_exit() {
@@ -92,14 +92,14 @@ fn poll_events(interval: Duration) -> crossterm::Result<Option<event::Event>> {
     Ok(None)
 }
 
-/// When the user resizes the terminal, resize events come in batches meaning 
-/// events returned while resizing the window aren't as important as the last 
+/// When the user resizes the terminal, resize events come in batches meaning
+/// events returned while resizing the window aren't as important as the last
 /// resize event giving us the final terminal dimensions.
 fn process_resize_batch() {
     while let Ok(true) = event::poll(RESIZE_BATCH_WAIT_DURATION) {
         match event::read().unwrap() {
             Event::Resize(..) => (),
-            _ => break
+            _ => break,
         }
     }
 }

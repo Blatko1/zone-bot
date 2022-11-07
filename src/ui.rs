@@ -29,7 +29,7 @@ impl UI {
         }
     }
 
-    /// Updates the UI objects with 
+    /// Updates the UI objects with
     pub fn update(&mut self, data: &MarketBot) {
         self.live_price.update(data);
         self.alerts.update(data);
@@ -41,10 +41,7 @@ impl UI {
         UILayout::top_bottom_layout(self, terminal_area);
     }
 
-    pub fn render<B: Backend>(
-        &self,
-        frame: &mut Frame<B>
-    ) {
+    pub fn render<B: Backend>(&self, frame: &mut Frame<B>) {
         self.commands.render(frame);
         self.live_price.render(frame);
         self.alerts.render(frame);
@@ -55,7 +52,7 @@ impl UI {
 #[derive(Debug)]
 struct ZoneList {
     area: Rect,
-    visible: bool
+    visible: bool,
 }
 
 impl ZoneList {
@@ -79,11 +76,11 @@ impl StaticObject for ZoneList {
 
     fn set_visibility(&mut self, visible: bool) {
         self.visible = visible;
-    }  
+    }
 
     fn is_visible(&self) -> bool {
         self.visible
-    }  
+    }
 }
 
 impl DynamicObject for ZoneList {
@@ -125,11 +122,11 @@ impl StaticObject for AlertList {
 
     fn set_visibility(&mut self, visible: bool) {
         self.visible = visible;
-    }  
+    }
 
     fn is_visible(&self) -> bool {
         self.visible
-    }  
+    }
 }
 
 impl DynamicObject for AlertList {
@@ -185,11 +182,11 @@ impl StaticObject for LivePricePar {
 
     fn set_visibility(&mut self, visible: bool) {
         self.visible = visible;
-    }  
+    }
 
     fn is_visible(&self) -> bool {
         self.visible
-    } 
+    }
 }
 
 impl DynamicObject for LivePricePar {
@@ -202,7 +199,7 @@ impl DynamicObject for LivePricePar {
 #[derive(Debug)]
 struct CommandsPar {
     area: Rect,
-    visible: bool
+    visible: bool,
 }
 
 impl CommandsPar {
@@ -211,7 +208,7 @@ impl CommandsPar {
     fn new() -> Self {
         Self {
             area: Rect::default(),
-            visible: true
+            visible: true,
         }
     }
 }
@@ -258,11 +255,11 @@ impl StaticObject for CommandsPar {
 
     fn set_visibility(&mut self, visible: bool) {
         self.visible = visible;
-    }  
+    }
 
     fn is_visible(&self) -> bool {
         self.visible
-    }  
+    }
 }
 
 /// Every UI dynamic object which has constantly changing
